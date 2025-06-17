@@ -5,7 +5,7 @@ import { users } from '../fake/data.js';
 export const UserSchema = z.object({
   username: z.string().min(3).max(20),
   password: z.string().min(8).regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/),
-  role: z.enum(['admin', 'user', 'guest']),
+  // role: z.enum(['admin', 'user', 'guest']),
   email: z.string().email()
 });
 

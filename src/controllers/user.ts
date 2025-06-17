@@ -6,8 +6,10 @@ import { generateTokens, verifyRefreshToken } from "../services/JWT.js";
 import { z } from "zod";
 import { createRefreshToken, deleteRefreshToken, existsRefreshToken, TokenSchema, updateRefreshToken } from "../models/Token.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { users } from "../fake/data.js";
 
 const route = new Hono();
+
 
 route.post('/register', zValidator('json', UserSchema), async (c) => {
   try {
@@ -19,15 +21,14 @@ route.post('/register', zValidator('json', UserSchema), async (c) => {
         error: "Nom d'utilisateur déjà pris"
       }, 400)
     }
-
-    const { password: hashedPassword, salt } = await hashPassword(validatedUser.password);
-    const userId = crypto.randomUUID(); // Générer un ID unique
+    const hashedPassword: string = await hashPassword(validatedUser.password);
+    const userId = crypto.randomUUID();
 
     const user = {
       id: userId,
       ...validatedUser,
+      role: users.size === 0 ? 'admin' : 'user',
       password: hashedPassword,
-      salt
     };
 
     setUser(user);
@@ -57,16 +58,15 @@ route.post('/register', zValidator('json', UserSchema), async (c) => {
 route.post('/login', zValidator("json", LoginSchema), async (c) => {
   try {
     const validatedCredentials = c.req.valid("json");
+    
 
     const user = getUser(validatedCredentials.username);
     if (!user) {
       return c.json({ error: 'Utilisateur non trouvé' }, 404);
     }
-
     const isValid = await verifyPassword(
-      validatedCredentials.password,
-      user.salt,
-      user.password
+      user.password,
+      validatedCredentials.password
     );
 
     if (!isValid) {
@@ -79,6 +79,8 @@ route.post('/login', zValidator("json", LoginSchema), async (c) => {
       username: user.username,
       role: user.role
     });
+
+    console.log(user.id);
 
     // Stocker le nouveau refresh token
     createRefreshToken(tokens.refreshToken);
